@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class UIStyle {
-  static const Color primaryColor = Color.fromARGB(255, 76, 175, 80); // Зеленый цвет
+  static const Color primaryColor = const Color(0xFF4CAF50); // Убрали ненужный '!'
   static const Color secondaryColor = Colors.blueGrey;
   static const Color accentColor = Colors.white;
   static const Color errorColor = Colors.red;
 
   static const LinearGradient gradient = LinearGradient(
-    colors: [Color.fromARGB(255, 144, 238, 144)!, Color.fromARGB(255, 34, 139, 34)!],
+    colors: [const Color(0xFF90EE90)!, const Color(0xFF228B22)!], // Оставляем '!' здесь, так как Colors могут быть nullable
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
