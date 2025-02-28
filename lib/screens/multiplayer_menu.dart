@@ -85,6 +85,19 @@ class _MultiplayerMenuState extends State<MultiplayerMenu> {
                 ),
               ),
             ),
+            SizedBox(height: 20),
+            SizedBox(
+              width: 200,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context), // Возвращаемся в главное меню
+                child: Text('Back', style: TextStyle(color: Colors.white, fontSize: 20)),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
           ],
         ),
       ),
