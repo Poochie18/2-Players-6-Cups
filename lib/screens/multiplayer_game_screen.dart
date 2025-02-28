@@ -161,7 +161,7 @@ class _MultiplayerGameScreenState extends State<MultiplayerGameScreen> {
                 resetGame();
               },
               child: Text('Play Again', style: TextStyle(color: UIStyle.primaryColor, fontSize: 18)),
-              style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor),
+              style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor, fixedWidth: 150), // Фиксированная ширина
             ),
             SizedBox(width: 10),
             ElevatedButton(
@@ -170,7 +170,7 @@ class _MultiplayerGameScreenState extends State<MultiplayerGameScreen> {
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
               child: Text('Main Menu', style: TextStyle(color: UIStyle.primaryColor, fontSize: 18)),
-              style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor),
+              style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor, fixedWidth: 150), // Фиксированная ширина
             ),
           ],
         ),
@@ -193,7 +193,7 @@ class _MultiplayerGameScreenState extends State<MultiplayerGameScreen> {
                 resetGame();
               },
               child: Text('Play Again', style: TextStyle(color: UIStyle.primaryColor, fontSize: 18)),
-              style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor),
+              style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor, fixedWidth: 150), // Фиксированная ширина
             ),
             SizedBox(width: 10),
             ElevatedButton(
@@ -202,7 +202,7 @@ class _MultiplayerGameScreenState extends State<MultiplayerGameScreen> {
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
               child: Text('Main Menu', style: TextStyle(color: UIStyle.primaryColor, fontSize: 18)),
-              style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor),
+              style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor, fixedWidth: 150), // Фиксированная ширина
             ),
           ],
         ),
@@ -254,7 +254,7 @@ class _MultiplayerGameScreenState extends State<MultiplayerGameScreen> {
                 resetGame();
               },
               child: Text('Restart', style: UIStyle.buttonTextStyle.copyWith(color: UIStyle.accentColor)),
-              style: UIStyle.buttonStyle(),
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
             ),
             SizedBox(height: 10),
             ElevatedButton(
@@ -263,7 +263,7 @@ class _MultiplayerGameScreenState extends State<MultiplayerGameScreen> {
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
               child: Text('Back to Main Menu', style: UIStyle.buttonTextStyle.copyWith(color: UIStyle.accentColor)),
-              style: UIStyle.buttonStyle(),
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
             ),
           ],
         ),
@@ -295,7 +295,7 @@ class _MultiplayerGameScreenState extends State<MultiplayerGameScreen> {
                   Navigator.popUntil(context, (route) => route.isFirst);
                 },
                 child: Text('Cancel', style: UIStyle.buttonTextStyle.copyWith(color: UIStyle.accentColor)),
-                style: UIStyle.buttonStyle(backgroundColor: UIStyle.errorColor),
+                style: UIStyle.buttonStyle(backgroundColor: UIStyle.errorColor, fixedWidth: 200), // Фиксированная ширина
               ),
             ],
           ),
@@ -423,8 +423,8 @@ class PlayerArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cupWidth = 60.0;
-    final totalCupsWidth = cupWidth * 6 + 80;
+    final cupWidth = 60.0; // Ширина одной чашки
+    final totalCupsWidth = cupWidth * 6 + 80; // Фиксированная ширина стола (6 чашек + отступы)
     return Center(
       child: Container(
         width: totalCupsWidth,
@@ -491,7 +491,9 @@ class CupWidget extends StatelessWidget {
           focal: Alignment(-0.3, -0.3),
           focalRadius: 0.1,
         ),
-        boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 8)), // Увеличили смещение тени вниз
+        ],
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'screens/multiplayer_menu.dart';
 import 'screens/single_player_game_screen.dart';
 import 'screens/multiplayer_game_screen.dart';
 import 'screens/settings_screen.dart';
+import 'utils/ui_style.dart'; // Добавляем импорт
 
 void main() {
   runApp(MyApp());
@@ -16,7 +17,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Two Players, Six Cups',
       theme: ThemeData(
-        primarySwatch: UIStyle.primaryColor,
+        primarySwatch: MaterialColor(UIStyle.primaryColor.value, {
+          50: UIStyle.primaryColor.withOpacity(0.1),
+          100: UIStyle.primaryColor.withOpacity(0.2),
+          200: UIStyle.primaryColor.withOpacity(0.3),
+          300: UIStyle.primaryColor.withOpacity(0.4),
+          400: UIStyle.primaryColor.withOpacity(0.5),
+          500: UIStyle.primaryColor.withOpacity(0.6),
+          600: UIStyle.primaryColor.withOpacity(0.7),
+          700: UIStyle.primaryColor.withOpacity(0.8),
+          800: UIStyle.primaryColor.withOpacity(0.9),
+          900: UIStyle.primaryColor,
+        }),
       ),
       initialRoute: '/',
       routes: {

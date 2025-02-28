@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class UIStyle {
-  static const Color primaryColor = Colors.green;
+  static const Color primaryColor = Color.fromARGB(255, 76, 175, 80); // Зеленый цвет
   static const Color secondaryColor = Colors.blueGrey;
   static const Color accentColor = Colors.white;
   static const Color errorColor = Colors.red;
 
   static const LinearGradient gradient = LinearGradient(
-    colors: [Colors.green[300]!, Colors.green[700]!],
+    colors: [Color.fromARGB(255, 144, 238, 144)!, Color.fromARGB(255, 34, 139, 34)!],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -20,12 +20,13 @@ class UIStyle {
     offset: Offset(0, 2),
   );
 
-  static ButtonStyle buttonStyle({Color? backgroundColor, Color? textColor}) {
+  static ButtonStyle buttonStyle({Color? backgroundColor, Color? textColor, double? fixedWidth}) {
     return ElevatedButton.styleFrom(
       backgroundColor: backgroundColor ?? primaryColor,
       foregroundColor: textColor ?? accentColor,
       padding: buttonPadding,
       shape: RoundedRectangleBorder(borderRadius: buttonBorderRadius),
+      minimumSize: Size(fixedWidth ?? 200, 0), // Фиксированная минимальная ширина
     );
   }
 
@@ -54,7 +55,7 @@ class UIStyle {
     shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
   );
 
-  static AlertDialogStyle alertDialogStyle({required String title, required Widget content}) {
+  static Widget alertDialogStyle({required String title, required Widget content}) {
     return AlertDialog(
       backgroundColor: Colors.grey[100]!,
       shape: RoundedRectangleBorder(borderRadius: buttonBorderRadius),

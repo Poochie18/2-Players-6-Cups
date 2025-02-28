@@ -8,8 +8,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late bool _playerGoesFirst;
-  late String _playerName;
+  bool? _playerGoesFirst;
+  String? _playerName;
+  final TextEditingController _playerNameController = TextEditingController();
 
   @override
   void initState() {
@@ -22,17 +23,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _playerGoesFirst = prefs.getBool('playerGoesFirst') ?? true;
       _playerName = prefs.getString('playerName') ?? 'Player';
+      _playerNameController.text = _playerName!;
     });
   }
 
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('playerGoesFirst', _playerGoesFirst);
-    await prefs.setString('playerName', _playerName);
+    await prefs.setBool('playerGoesFirst', _playerGoesFirst!);
+    await prefs.setString('playerName', _playerName!);
+  }
+
+  @override
+  void dispose() {
+    _playerNameController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_playerGoesFirst == null || _playerName == null) {
+      return Scaffold(
+        backgroundColor: Colors.grey[100]!,
+        body: Center(
+          child: CircularProgressIndicator(color: UIStyle.primaryColor),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[100]!,
       body: Center(
@@ -53,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: UIStyle.subtitleStyle,
                 ),
                 Switch(
-                  value: _playerGoesFirst,
+                  value: _playerGoesFirst!,
                   onChanged: (value) {
                     setState(() {
                       _playerGoesFirst = value;
@@ -65,25 +82,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             SizedBox(height: 20),
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Player Name',
-                labelStyle: UIStyle.subtitleStyle.copyWith(color: UIStyle.secondaryColor),
-                border: OutlineInputBorder(borderRadius: UIStyle.buttonBorderRadius),
+            Container(
+              width: 200, // Уменьшили ширину поля
+              child: TextField(
+                controller: _playerNameController,
+                decoration: InputDecoration(
+                  labelText: 'Player Name',
+                  labelStyle: UIStyle.subtitleStyle.copyWith(color: UIStyle.secondaryColor),
+                  border: OutlineInputBorder(borderRadius: UIStyle.buttonBorderRadius),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _playerName = value;
+                    _saveSettings();
+                  });
+                },
               ),
-              controller: TextEditingController(text: _playerName),
-              onChanged: (value) {
-                setState(() {
-                  _playerName = value;
-                  _saveSettings();
-                });
-              },
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               child: Text('Back', style: UIStyle.buttonTextStyle),
-              style: UIStyle.buttonStyle(),
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
             ),
           ],
         ),

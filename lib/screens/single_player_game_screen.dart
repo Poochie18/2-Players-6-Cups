@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:two_players_six_cups/models/bot_logic.dart';
 import 'package:two_players_six_cups/models/game_logic.dart';
 import 'package:two_players_six_cups/utils/ui_style.dart';
+import 'dart:math';
 
 class SinglePlayerGameScreen extends StatefulWidget {
   final String botDifficulty;
@@ -265,7 +266,7 @@ class _SinglePlayerGameScreenState extends State<SinglePlayerGameScreen> {
                 resetGame();
               },
               child: Text('Restart', style: UIStyle.buttonTextStyle.copyWith(color: UIStyle.accentColor)),
-              style: UIStyle.buttonStyle(),
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
             ),
             SizedBox(height: 10),
             ElevatedButton(
@@ -274,7 +275,7 @@ class _SinglePlayerGameScreenState extends State<SinglePlayerGameScreen> {
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
               child: Text('Back to Main Menu', style: UIStyle.buttonTextStyle.copyWith(color: UIStyle.accentColor)),
-              style: UIStyle.buttonStyle(),
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
             ),
           ],
         ),
@@ -350,7 +351,7 @@ class _SinglePlayerGameScreenState extends State<SinglePlayerGameScreen> {
               SizedBox(height: 10),
               Text(
                 winner == null && drawMessage == null
-                    ? (currentPlayer == 1 ? 'Your turn' : "Bot's turn")
+                    ? (currentPlayer == 1 ? 'Your turn' : "Opponent's turn") // Изменено на "Opponent's turn"
                     : '',
                 style: UIStyle.subtitleStyle,
               ),
@@ -472,7 +473,9 @@ class CupWidget extends StatelessWidget {
           focal: Alignment(-0.3, -0.3),
           focalRadius: 0.1,
         ),
-        boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 8)), // Увеличили смещение тени вниз
+        ],
       ),
     );
   }

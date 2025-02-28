@@ -8,19 +8,8 @@ class MultiplayerMenu extends StatefulWidget {
 }
 
 class _MultiplayerMenuState extends State<MultiplayerMenu> {
-  final _roomCodeController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _roomCodeController.addListener(() {
-      setState(() {});
-    });
-  }
-
   @override
   void dispose() {
-    _roomCodeController.dispose();
     super.dispose();
   }
 
@@ -45,42 +34,48 @@ class _MultiplayerMenuState extends State<MultiplayerMenu> {
   }
 
   void _joinGame() {
-    final roomCode = _roomCodeController.text.trim();
-    if (roomCode.length == 6 && int.tryParse(roomCode) != null) {
-      Navigator.pushNamed(
-        context,
-        '/game',
-        arguments: {
-          'gameMode': 'multiplayer',
-          'roomCode': roomCode,
-          'isLocal': true,
-          'isHost': false,
-          'isJoining': true,
-        },
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) => UIStyle.alertDialogStyle(
-          title: 'Error',
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Please enter a valid 6-digit room code.',
-                style: UIStyle.subtitleStyle.copyWith(color: UIStyle.accentColor),
+    showDialog(
+      context: context,
+      builder: (context) => UIStyle.alertDialogStyle(
+        title: 'Join Game',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Enter 6-Digit Room Code',
+                labelStyle: UIStyle.subtitleStyle.copyWith(color: UIStyle.secondaryColor),
+                border: OutlineInputBorder(borderRadius: UIStyle.buttonBorderRadius),
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('OK', style: TextStyle(color: UIStyle.primaryColor, fontSize: 16)),
-                style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor),
-              ),
-            ],
-          ),
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              onChanged: (value) {
+                if (value.length == 6 && int.tryParse(value) != null) {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(
+                    context,
+                    '/game',
+                    arguments: {
+                      'gameMode': 'multiplayer',
+                      'roomCode': value,
+                      'isLocal': true,
+                      'isHost': false,
+                      'isJoining': true,
+                    },
+                  );
+                }
+              },
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: UIStyle.buttonTextStyle.copyWith(color: UIStyle.accentColor)),
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
   }
 
   @override
@@ -100,33 +95,19 @@ class _MultiplayerMenuState extends State<MultiplayerMenu> {
             ElevatedButton(
               onPressed: _createGame,
               child: Text('Create Game', style: UIStyle.buttonTextStyle),
-              style: UIStyle.buttonStyle(),
-            ),
-            SizedBox(height: 20),
-            TextField(
-              controller: _roomCodeController,
-              decoration: InputDecoration(
-                labelText: 'Enter 6-Digit Room Code',
-                labelStyle: UIStyle.subtitleStyle.copyWith(color: UIStyle.secondaryColor),
-                border: OutlineInputBorder(borderRadius: UIStyle.buttonBorderRadius),
-                errorText: _roomCodeController.text.length == 6 && int.tryParse(_roomCodeController.text) == null
-                    ? 'Code must be numeric'
-                    : null,
-              ),
-              keyboardType: TextInputType.number,
-              maxLength: 6,
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _joinGame,
               child: Text('Join Game', style: UIStyle.buttonTextStyle),
-              style: UIStyle.buttonStyle(),
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               child: Text('Back', style: UIStyle.buttonTextStyle),
-              style: UIStyle.buttonStyle(),
+              style: UIStyle.buttonStyle(fixedWidth: 200), // Фиксированная ширина
             ),
           ],
         ),
