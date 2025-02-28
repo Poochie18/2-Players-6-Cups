@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:two_players_six_cups/screens/main_menu.dart';
-import 'package:two_players_six_cups/screens/difficulty_menu.dart';
-import 'package:two_players_six_cups/screens/game_screen.dart';
-import 'package:two_players_six_cups/screens/multiplayer_menu.dart';
-import 'package:two_players_six_cups/screens/settings_screen.dart';
+import 'screens/main_menu.dart';
+import 'screens/difficulty_menu.dart';
+import 'screens/multiplayer_menu.dart';
+import 'screens/game_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -13,18 +13,25 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '2 Players 6 Cups',
+      title: 'Two Players, Six Cups',
       theme: ThemeData(
-        primarySwatch: Colors.green,
-        scaffoldBackgroundColor: Colors.grey[100],
-        textTheme: TextTheme(bodyMedium: TextStyle(color: Colors.blueGrey)),
+        primarySwatch: Colors.blue,
       ),
       initialRoute: '/',
       routes: {
         '/': (context) => MainMenu(),
         '/difficulty': (context) => DifficultyMenu(),
-        '/game': (context) => GameScreen(gameMode: 'single', botDifficulty: ModalRoute.of(context)!.settings.arguments as String?),
         '/multiplayer': (context) => MultiplayerMenu(),
+        '/game': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          return GameScreen(
+            gameMode: args?['gameMode'] as String? ?? 'single',
+            botDifficulty: args?['botDifficulty'] as String?,
+            roomCode: args?['roomCode'] as String?,
+            isLocal: args?['isLocal'] as bool?,
+            isHost: args?['isHost'] as bool?,
+          );
+        },
         '/settings': (context) => SettingsScreen(),
       },
     );

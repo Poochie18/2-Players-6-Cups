@@ -1,29 +1,38 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:convert' show jsonDecode, jsonEncode;
 import 'bot_logic.dart';
 
 class GameScreen extends StatefulWidget {
   final String gameMode;
   final String? botDifficulty;
   final String? roomCode;
-  final String? hostIp;
+  final bool? isLocal;
+  final bool? isHost;
 
-  GameScreen({required this.gameMode, this.botDifficulty, this.roomCode, this.hostIp});
+  GameScreen({
+    required this.gameMode,
+    this.botDifficulty,
+    this.roomCode,
+    this.isLocal,
+    this.isHost,
+  });
 
   @override
   _GameScreenState createState() => _GameScreenState();
 }
 
 class _GameScreenState extends State<GameScreen> {
-  int currentPlayer = 1; // 1 = Player, 2 = Bot (по умолчанию игрок)
+  int currentPlayer = 1; // 1 = Player 1, 2 = Player 2
   List<List<Map<String, dynamic>?>> board = List.generate(3, (_) => List.filled(3, null));
-  List<Map<String, dynamic>> playerCups = [
+  List<Map<String, dynamic>> player1Cups = [
     {'size': 'small', 'player': 1}, {'size': 'small', 'player': 1},
     {'size': 'medium', 'player': 1}, {'size': 'medium', 'player': 1},
     {'size': 'large', 'player': 1}, {'size': 'large', 'player': 1},
   ];
-  List<Map<String, dynamic>> botCups = [
+  List<Map<String, dynamic>> player2Cups = [
     {'size': 'small', 'player': 2}, {'size': 'small', 'player': 2},
     {'size': 'medium', 'player': 2}, {'size': 'medium', 'player': 2},
     {'size': 'large', 'player': 2}, {'size': 'large', 'player': 2},
@@ -32,24 +41,18 @@ class _GameScreenState extends State<GameScreen> {
   String? drawMessage; // Для сообщения о ничьей
   bool isBotThinking = false;
   String playerName = 'Player';
+  String? gameFilePath;
 
   @override
   void initState() {
     super.initState();
-    if (widget.gameMode != 'single') {
-      throw Exception('This screen is for single player only');
+    if (widget.gameMode != 'multiplayer') {
+      throw Exception('This screen is for multiplayer only');
     }
     _loadSettings().then((_) {
-      _printDebugSettings(); // Вызываем после загрузки настроек
-      print('Game started: ${currentPlayer == 1 ? playerName : 'Bot'} turn');
-      if (currentPlayer == 2 && !isBotThinking) { // Если бот ходит первым
-        isBotThinking = true;
-        final random = Random();
-        final delay = Duration(milliseconds: 500 + random.nextInt(1000)); // Задержка 500–1500 мс
-        Future.delayed(delay, () {
-          botMove();
-        });
-      }
+      _printDebugSettings();
+      print('Game started: ${currentPlayer == 1 ? playerName : 'Opponent'} turn');
+      _initializeMultiplayer();
     });
   }
 
@@ -57,12 +60,66 @@ class _GameScreenState extends State<GameScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       playerName = prefs.getString('playerName') ?? 'Player';
-      currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2; // Убедимся, что загружаем корректно
+      currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2; // Загружаем, кто ходит первым
     });
   }
 
   void _printDebugSettings() {
     print('Debug Settings - Player Name: $playerName, Player Goes First: ${currentPlayer == 1}');
+  }
+
+  void _initializeMultiplayer() async {
+    if (widget.isLocal ?? false) {
+      final directory = await getApplicationDocumentsDirectory();
+      gameFilePath = '${directory.path}/multiplayer_game_${widget.roomCode ?? 'LOCAL123'}.json';
+      _loadGameState(); // Загружаем состояние игры из файла
+      _startListeningForChanges(); // Начинаем слушать изменения в файле
+    }
+  }
+
+  Future<void> _loadGameState() async {
+    if (gameFilePath != null) {
+      final file = File(gameFilePath!);
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final data = jsonDecode(content) as Map<String, dynamic>;
+        setState(() {
+          board = List<List<Map<String, dynamic>?>>.from(
+            (data['board'] as List).map((row) => List<Map<String, dynamic>?>.from(row.map((cell) => cell != null ? Map<String, dynamic>.from(cell) : null))),
+          );
+          player1Cups = List<Map<String, dynamic>>.from(data['player1Cups'].map((cup) => Map<String, dynamic>.from(cup)));
+          player2Cups = List<Map<String, dynamic>>.from(data['player2Cups'].map((cup) => Map<String, dynamic>.from(cup)));
+          currentPlayer = data['currentPlayer'] as int;
+          winner = data['winner'] as String?;
+          drawMessage = data['drawMessage'] as String?;
+        });
+      }
+    }
+  }
+
+  void _startListeningForChanges() {
+    if (gameFilePath != null) {
+      final file = File(gameFilePath!);
+      file.watch().listen((event) async {
+        if (event.type == FileSystemEvent.modify) {
+          await _loadGameState();
+        }
+      });
+    }
+  }
+
+  void _saveGameState() async {
+    if (gameFilePath != null) {
+      final file = File(gameFilePath!);
+      await file.writeAsString(jsonEncode({
+        'board': board,
+        'player1Cups': player1Cups,
+        'player2Cups': player2Cups,
+        'currentPlayer': currentPlayer,
+        'winner': winner,
+        'drawMessage': drawMessage,
+      }));
+    }
   }
 
   void _showMenuPopup() {
@@ -135,9 +192,9 @@ class _GameScreenState extends State<GameScreen> {
                 flex: 1,
                 child: PlayerArea(
                   player: 2,
-                  cups: botCups,
-                  isMyTurn: false,
-                  label: 'Bot (${widget.botDifficulty ?? 'Easy'})',
+                  cups: widget.isHost ?? false ? player2Cups : player1Cups,
+                  isMyTurn: currentPlayer == 2 && !isBotThinking,
+                  label: 'Opponent',
                 ),
               ),
               SizedBox(height: 10),
@@ -162,7 +219,7 @@ class _GameScreenState extends State<GameScreen> {
                         ),
                       ),
                       child: DragTarget<Map<String, dynamic>>(
-                        onAccept: (data) => handleDrop(data, index),
+                        onAccept: (data) => _handleMyMove(data, index),
                         builder: (context, _, __) => Center(
                           child: board[index ~/ 3][index % 3] != null
                               ? CupWidget(size: board[index ~/ 3][index % 3]!['size'], player: board[index ~/ 3][index % 3]!['player'])
@@ -176,7 +233,7 @@ class _GameScreenState extends State<GameScreen> {
               SizedBox(height: 10),
               Text(
                 winner == null && drawMessage == null
-                    ? (currentPlayer == 1 ? 'Your turn' : "Opponent's turn")
+                    ? (currentPlayer == (widget.isHost ?? false ? 1 : 2) ? 'Your turn' : "Opponent's turn")
                     : '',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey),
               ),
@@ -189,8 +246,8 @@ class _GameScreenState extends State<GameScreen> {
                 flex: 1,
                 child: PlayerArea(
                   player: 1,
-                  cups: playerCups,
-                  isMyTurn: currentPlayer == 1 && !isBotThinking,
+                  cups: widget.isHost ?? false ? player1Cups : player2Cups,
+                  isMyTurn: currentPlayer == (widget.isHost ?? false ? 1 : 2) && !isBotThinking,
                   label: playerName,
                 ),
               ),
@@ -262,9 +319,9 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  void handleDrop(Map<String, dynamic> data, int index) {
-    if (currentPlayer != data['player'] || isBotThinking) {
-      print('Move blocked: currentPlayer=$currentPlayer, isBotThinking=$isBotThinking');
+  void _handleMyMove(Map<String, dynamic> data, int index) {
+    if (currentPlayer != (widget.isHost ?? false ? 1 : 2)) {
+      print('Move blocked: currentPlayer=$currentPlayer');
       return;
     }
 
@@ -280,26 +337,17 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       board[row][col] = data;
       if (currentPlayer == 1) {
-        playerCups.remove(data);
+        player1Cups.remove(data);
       } else {
-        botCups.remove(data);
+        player2Cups.remove(data);
       }
-      print('$playerName placed ${data['size']} at ($row, $col). Cups left: ${currentPlayer == 1 ? playerCups.length : botCups.length}');
+      print('$playerName placed ${data['size']} at ($row, $col). Cups left: ${currentPlayer == 1 ? player1Cups.length : player2Cups.length}');
 
-      if (winner == null) {
-        _checkGameEndAfterSecondPlayer(); // Проверяем исход после хода второго игрока
-        if (winner == null && drawMessage == null) {
-          currentPlayer = 3 - currentPlayer; // Переключение между 1 и 2
-          isBotThinking = currentPlayer == 2;
-          print('Switching to ${currentPlayer == 1 ? 'Your turn' : "Opponent's turn"}');
-          if (isBotThinking) {
-            final random = Random();
-            final delay = Duration(milliseconds: 500 + random.nextInt(1000)); // Задержка 500–1500 мс
-            Future.delayed(delay, () {
-              botMove();
-            });
-          }
-        }
+      currentPlayer = 3 - currentPlayer; // Переключаем игрока
+      _saveGameState(); // Сохраняем состояние в файл
+      _checkGameEndAfterSecondPlayer(); // Проверяем исход после хода
+      if (winner == null && drawMessage == null) {
+        print('Switching to ${currentPlayer == (widget.isHost ?? false ? 1 : 2) ? 'Your turn' : "Opponent's turn"}');
       }
     });
   }
@@ -325,72 +373,27 @@ class _GameScreenState extends State<GameScreen> {
     return false;
   }
 
-  void botMove() {
-    if (currentPlayer != 2 || widget.gameMode != 'single' || botCups.isEmpty) {
-      print('Bot move skipped: currentPlayer=$currentPlayer, cups left=${botCups.length}');
-      currentPlayer = 1;
+  void resetGame() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      board = List.generate(3, (_) => List.filled(3, null));
+      player1Cups = [
+        {'size': 'small', 'player': 1}, {'size': 'small', 'player': 1},
+        {'size': 'medium', 'player': 1}, {'size': 'medium', 'player': 1},
+        {'size': 'large', 'player': 1}, {'size': 'large', 'player': 1},
+      ];
+      player2Cups = [
+        {'size': 'small', 'player': 2}, {'size': 'small', 'player': 2},
+        {'size': 'medium', 'player': 2}, {'size': 'medium', 'player': 2},
+        {'size': 'large', 'player': 2}, {'size': 'large', 'player': 2},
+      ];
+      currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2; // Сбрасываем на настройки
+      winner = null;
+      drawMessage = null;
       isBotThinking = false;
-      return;
-    }
-
-    final freeCells = <int>[];
-    final overwriteCells = <int>[];
-    for (int i = 0; i < 9; i++) {
-      final row = i ~/ 3;
-      final col = i % 3;
-      final cell = board[row][col];
-      if (cell == null) {
-        freeCells.add(i);
-      } else if (cell['player'] == 1 && botCups.any((cup) => canPlace(cup['size'], cell, 2))) { // Проверяем, можно ли перекрыть любую чашкой
-        overwriteCells.add(i);
-      }
-    }
-
-    if (freeCells.isEmpty && overwriteCells.isEmpty) {
-      print('No available moves for Bot, but forcing a move if possible');
-      // Если нет ходов, ищем любой возможный ход (даже случайный)
-      for (int i = 0; i < 9; i++) {
-        final row = i ~/ 3;
-        final col = i % 3;
-        final cell = board[row][col];
-        for (var cup in botCups) {
-          if (canPlace(cup['size'], cell, 2)) {
-            freeCells.add(i);
-            break;
-          }
-        }
-      }
-      if (freeCells.isEmpty) {
-        currentPlayer = 1;
-        isBotThinking = false;
-        return;
-      }
-    }
-
-    final BotLogic botLogic = BotLogic(board, botCups, widget.botDifficulty ?? 'easy');
-    final Map<String, dynamic>? bestCup = botLogic.findBestMove(freeCells, overwriteCells, 2, botCups.length);
-
-    if (bestCup != null) {
-      final moveIndex = bestCup['moveIndex'] as int;
-      final botCup = botCups.firstWhere((cup) => cup['size'] == bestCup['size']); // Находим чашку по размеру
-      setState(() {
-        board[moveIndex ~/ 3][moveIndex % 3] = botCup;
-        botCups.remove(botCup); // Удаляем использованную чашку
-        print('Bot placed ${botCup['size']} at (${moveIndex ~/ 3}, ${moveIndex % 3}). Cups left: ${botCups.length}');
-
-        if (winner == null) {
-          _checkGameEndAfterSecondPlayer(); // Проверяем исход после хода второго игрока
-          if (winner == null && drawMessage == null) {
-            currentPlayer = 1;
-            isBotThinking = false;
-          }
-        }
-      });
-    } else {
-      currentPlayer = 1;
-      isBotThinking = false;
-      print('Bot has no valid moves, switching back to $playerName');
-    }
+      print('Game reset: ${currentPlayer == (widget.isHost ?? false ? 1 : 2) ? playerName : 'Opponent'} turn');
+    });
+    _saveGameState(); // Сохраняем сброшенное состояние
   }
 
   void _checkGameEndAfterSecondPlayer() {
@@ -402,15 +405,15 @@ class _GameScreenState extends State<GameScreen> {
         print('$playerName wins!');
         return;
       } else if (cells.every((cell) => cell != null && cell['player'] == 2)) {
-        setState(() => winner = 'Bot');
-        print('Bot wins!');
+        setState(() => winner = 'Opponent');
+        print('Opponent wins!');
         return;
       }
     }
 
     // Ничья проверяется только после хода второго игрока
     if (currentPlayer == (currentPlayer == 1 ? 2 : 1)) { // Если это ход второго игрока
-      if (playerCups.isEmpty && botCups.isEmpty) {
+      if (player1Cups.isEmpty && player2Cups.isEmpty) {
         setState(() {
           drawMessage = 'Draw! Both players are out of cups.';
           winner = null;
@@ -419,35 +422,35 @@ class _GameScreenState extends State<GameScreen> {
         return;
       }
 
-      bool canPlayerMove = false;
+      bool canPlayer1Move = false;
       for (int i = 0; i < 9; i++) {
         final row = i ~/ 3;
         final col = i % 3;
         final cell = board[row][col];
-        for (var cup in playerCups) {
+        for (var cup in player1Cups) {
           if (canPlace(cup['size'], cell, 1)) {
-            canPlayerMove = true;
+            canPlayer1Move = true;
             break;
           }
         }
-        if (canPlayerMove) break;
+        if (canPlayer1Move) break;
       }
 
-      bool canBotMove = false;
+      bool canPlayer2Move = false;
       for (int i = 0; i < 9; i++) {
         final row = i ~/ 3;
         final col = i % 3;
         final cell = board[row][col];
-        for (var cup in botCups) {
+        for (var cup in player2Cups) {
           if (canPlace(cup['size'], cell, 2)) {
-            canBotMove = true;
+            canPlayer2Move = true;
             break;
           }
         }
-        if (canBotMove) break;
+        if (canPlayer2Move) break;
       }
 
-      if (!canPlayerMove && !canBotMove) {
+      if (!canPlayer1Move && !canPlayer2Move) {
         setState(() {
           drawMessage = 'Draw! No moves possible for either player.';
           winner = null;
@@ -462,36 +465,6 @@ class _GameScreenState extends State<GameScreen> {
     [0, 3, 6], [1, 4, 7], [2, 5, 8],
     [0, 4, 8], [2, 4, 6],
   ];
-
-  void resetGame() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      board = List.generate(3, (_) => List.filled(3, null));
-      playerCups = [
-        {'size': 'small', 'player': 1}, {'size': 'small', 'player': 1},
-        {'size': 'medium', 'player': 1}, {'size': 'medium', 'player': 1},
-        {'size': 'large', 'player': 1}, {'size': 'large', 'player': 1},
-      ];
-      botCups = [
-        {'size': 'small', 'player': 2}, {'size': 'small', 'player': 2},
-        {'size': 'medium', 'player': 2}, {'size': 'medium', 'player': 2},
-        {'size': 'large', 'player': 2}, {'size': 'large', 'player': 2},
-      ];
-      currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2; // Сбрасываем на настройки
-      winner = null;
-      drawMessage = null;
-      isBotThinking = false;
-      print('Game reset: ${currentPlayer == 1 ? playerName : 'Bot'} turn');
-      if (currentPlayer == 2 && !isBotThinking) { // Если бот ходит первым после сброса
-        isBotThinking = true;
-        final random = Random();
-        final delay = Duration(milliseconds: 500 + random.nextInt(1000)); // Задержка 500–1500 мс
-        Future.delayed(delay, () {
-          botMove();
-        });
-      }
-    });
-  }
 }
 
 class PlayerArea extends StatelessWidget {

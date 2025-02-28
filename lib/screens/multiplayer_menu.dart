@@ -1,6 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
-class MultiplayerMenu extends StatelessWidget {
+class MultiplayerMenu extends StatefulWidget {
+  @override
+  _MultiplayerMenuState createState() => _MultiplayerMenuState();
+}
+
+class _MultiplayerMenuState extends State<MultiplayerMenu> {
+  String _mode = 'Local'; // По умолчанию локальный мультиплеер
+  final _roomCodeController = TextEditingController();
+
+  void _startGame() {
+    final roomCode = _roomCodeController.text.trim();
+    Navigator.pushNamed(
+      context,
+      '/game',
+      arguments: {
+        'gameMode': 'multiplayer',
+        'roomCode': roomCode.isEmpty ? 'LOCAL123' : roomCode,
+        'isLocal': _mode == 'Local',
+        'isHost': true, // Локальный мультиплеер всегда начинается с хоста
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _roomCodeController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -12,91 +41,45 @@ class MultiplayerMenu extends StatelessWidget {
             Text(
               'Multiplayer',
               style: TextStyle(
-                fontSize: 56,
+                fontSize: 48,
                 color: Colors.blueGrey,
                 fontWeight: FontWeight.bold,
                 shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
               ),
             ),
+            SizedBox(height: 30),
+            DropdownButton<String>(
+              value: _mode,
+              onChanged: (String? newValue) {
+                setState(() {
+                  _mode = newValue!;
+                });
+              },
+              items: <String>['Local', 'Online'].map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value, style: TextStyle(fontSize: 20, color: Colors.blueGrey)),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20),
+            if (_mode == 'Local')
+              TextField(
+                controller: _roomCodeController,
+                decoration: InputDecoration(
+                  labelText: 'Room Code (optional)',
+                  labelStyle: TextStyle(color: Colors.blueGrey, fontSize: 18),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
             SizedBox(height: 20),
             SizedBox(
               width: 200,
               child: ElevatedButton(
-                onPressed: () {
-                  // Логика создания игры (временно пусто)
-                  Navigator.pushNamed(context, '/game', arguments: 'multi');
-                },
-                child: Text('Create Game', style: TextStyle(color: Colors.white, fontSize: 20)),
+                onPressed: _startGame,
+                child: Text('Start Game', style: TextStyle(color: Colors.white, fontSize: 20)),
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            SizedBox(height: 15),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Логика подключения к игре (временно пусто)
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      title: Text('Join Game', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-                      content: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Enter code (6 digits)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        keyboardType: TextInputType.number,
-                        maxLength: 6,
-                      ),
-                      actions: [
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('Cancel', style: TextStyle(color: Colors.white, fontSize: 18)),
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            // Логика подключения к комнате
-                            Navigator.pop(context);
-                            Navigator.pushNamed(context, '/game', arguments: 'multi');
-                          },
-                          child: Text('Connect', style: TextStyle(color: Colors.white, fontSize: 18)),
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                child: Text('Join Game', style: TextStyle(color: Colors.white, fontSize: 20)),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-            SizedBox(height: 15),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Back', style: TextStyle(color: Colors.white, fontSize: 20)),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15),
+                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
