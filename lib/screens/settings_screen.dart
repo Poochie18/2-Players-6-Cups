@@ -8,6 +8,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String playerName = 'Player';
+  bool playerGoesFirst = true; // По умолчанию игрок ходит первым
   final TextEditingController _nameController = TextEditingController(); // Контроллер для текста
 
   @override
@@ -20,6 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       playerName = prefs.getString('playerName') ?? 'Player';
+      playerGoesFirst = prefs.getBool('playerGoesFirst') ?? true; // Загружаем настройку
       _nameController.text = playerName; // Устанавливаем текст в контроллер
     });
   }
@@ -27,7 +29,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('playerName', playerName);
-    print('Settings saved - Player Name: $playerName'); // Дебаг для проверки
+    await prefs.setBool('playerGoesFirst', playerGoesFirst);
+    print('Settings saved - Player Name: $playerName, Player Goes First: $playerGoesFirst'); // Дебаг для проверки
   }
 
   @override
@@ -65,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 children: [
                   TextField(
-                    controller: _nameController, // Используем контроллер для корректного ввода
+                    controller: _nameController, // Поле для ввода имени
                     decoration: InputDecoration(
                       labelText: 'Player Name',
                       labelStyle: TextStyle(color: Colors.blueGrey, fontSize: 18),
@@ -77,6 +80,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       });
                       _saveSettings();
                     },
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Player Goes First',
+                        style: TextStyle(fontSize: 18, color: Colors.blueGrey),
+                      ),
+                      Switch(
+                        value: playerGoesFirst,
+                        onChanged: (value) {
+                          setState(() {
+                            playerGoesFirst = value;
+                          });
+                          _saveSettings();
+                        },
+                        activeColor: Colors.green,
+                      ),
+                    ],
                   ),
                 ],
               ),
