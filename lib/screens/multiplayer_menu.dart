@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'dart:math';
+import 'package:two_players_six_cups/utils/ui_style.dart';
 
 class MultiplayerMenu extends StatefulWidget {
   @override
@@ -7,27 +8,79 @@ class MultiplayerMenu extends StatefulWidget {
 }
 
 class _MultiplayerMenuState extends State<MultiplayerMenu> {
-  String _mode = 'Local'; // По умолчанию локальный мультиплеер
   final _roomCodeController = TextEditingController();
 
-  void _startGame() {
-    final roomCode = _roomCodeController.text.trim();
-    Navigator.pushNamed(
-      context,
-      '/game',
-      arguments: {
-        'gameMode': 'multiplayer',
-        'roomCode': roomCode.isEmpty ? 'LOCAL123' : roomCode,
-        'isLocal': _mode == 'Local',
-        'isHost': true, // Локальный мультиплеер всегда начинается с хоста
-      },
-    );
+  @override
+  void initState() {
+    super.initState();
+    _roomCodeController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _roomCodeController.dispose();
     super.dispose();
+  }
+
+  String _generateRoomCode() {
+    final random = Random();
+    return (100000 + random.nextInt(900000)).toString(); // 6-значный код
+  }
+
+  void _createGame() {
+    final roomCode = _generateRoomCode();
+    Navigator.pushNamed(
+      context,
+      '/game',
+      arguments: {
+        'gameMode': 'multiplayer',
+        'roomCode': roomCode,
+        'isLocal': true,
+        'isHost': true,
+        'isJoining': false,
+      },
+    );
+  }
+
+  void _joinGame() {
+    final roomCode = _roomCodeController.text.trim();
+    if (roomCode.length == 6 && int.tryParse(roomCode) != null) {
+      Navigator.pushNamed(
+        context,
+        '/game',
+        arguments: {
+          'gameMode': 'multiplayer',
+          'roomCode': roomCode,
+          'isLocal': true,
+          'isHost': false,
+          'isJoining': true,
+        },
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) => UIStyle.alertDialogStyle(
+          title: 'Error',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Please enter a valid 6-digit room code.',
+                style: UIStyle.subtitleStyle.copyWith(color: UIStyle.accentColor),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('OK', style: TextStyle(color: UIStyle.primaryColor, fontSize: 16)),
+                style: UIStyle.buttonStyle(backgroundColor: UIStyle.accentColor, textColor: UIStyle.primaryColor),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -40,63 +93,40 @@ class _MultiplayerMenuState extends State<MultiplayerMenu> {
           children: [
             Text(
               'Multiplayer',
-              style: TextStyle(
-                fontSize: 48,
-                color: Colors.blueGrey,
-                fontWeight: FontWeight.bold,
-                shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
-              ),
+              style: UIStyle.titleStyle,
+              textAlign: TextAlign.center,
             ),
             SizedBox(height: 30),
-            DropdownButton<String>(
-              value: _mode,
-              onChanged: (String? newValue) {
-                setState(() {
-                  _mode = newValue!;
-                });
-              },
-              items: <String>['Local', 'Online'].map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value, style: TextStyle(fontSize: 20, color: Colors.blueGrey)),
-                );
-              }).toList(),
+            ElevatedButton(
+              onPressed: _createGame,
+              child: Text('Create Game', style: UIStyle.buttonTextStyle),
+              style: UIStyle.buttonStyle(),
             ),
             SizedBox(height: 20),
-            if (_mode == 'Local')
-              TextField(
-                controller: _roomCodeController,
-                decoration: InputDecoration(
-                  labelText: 'Room Code (optional)',
-                  labelStyle: TextStyle(color: Colors.blueGrey, fontSize: 18),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+            TextField(
+              controller: _roomCodeController,
+              decoration: InputDecoration(
+                labelText: 'Enter 6-Digit Room Code',
+                labelStyle: UIStyle.subtitleStyle.copyWith(color: UIStyle.secondaryColor),
+                border: OutlineInputBorder(borderRadius: UIStyle.buttonBorderRadius),
+                errorText: _roomCodeController.text.length == 6 && int.tryParse(_roomCodeController.text) == null
+                    ? 'Code must be numeric'
+                    : null,
               ),
-            SizedBox(height: 20),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                onPressed: _startGame,
-                child: Text('Start Game', style: TextStyle(color: Colors.white, fontSize: 20)),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
+              keyboardType: TextInputType.number,
+              maxLength: 6,
             ),
             SizedBox(height: 20),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context), // Возвращаемся в главное меню
-                child: Text('Back', style: TextStyle(color: Colors.white, fontSize: 20)),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
+            ElevatedButton(
+              onPressed: _joinGame,
+              child: Text('Join Game', style: UIStyle.buttonTextStyle),
+              style: UIStyle.buttonStyle(),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Back', style: UIStyle.buttonTextStyle),
+              style: UIStyle.buttonStyle(),
             ),
           ],
         ),

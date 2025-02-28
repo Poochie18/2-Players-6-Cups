@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'screens/main_menu.dart';
 import 'screens/difficulty_menu.dart';
 import 'screens/multiplayer_menu.dart';
-import 'screens/game_screen.dart';
+import 'screens/single_player_game_screen.dart';
+import 'screens/multiplayer_game_screen.dart';
 import 'screens/settings_screen.dart';
 
 void main() {
@@ -15,7 +16,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Two Players, Six Cups',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: UIStyle.primaryColor,
       ),
       initialRoute: '/',
       routes: {
@@ -24,13 +25,16 @@ class MyApp extends StatelessWidget {
         '/multiplayer': (context) => MultiplayerMenu(),
         '/game': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-          return GameScreen(
-            gameMode: args?['gameMode'] as String? ?? 'single',
-            botDifficulty: args?['botDifficulty'] as String?,
-            roomCode: args?['roomCode'] as String?,
-            isLocal: args?['isLocal'] as bool?,
-            isHost: args?['isHost'] as bool?,
-          );
+          final gameMode = args?['gameMode'] as String? ?? 'single';
+          if (gameMode == 'single') {
+            return SinglePlayerGameScreen(botDifficulty: args?['botDifficulty'] as String? ?? 'easy');
+          } else {
+            return MultiplayerGameScreen(
+              roomCode: args?['roomCode'] as String? ?? 'LOCAL123',
+              isHost: args?['isHost'] as bool? ?? false,
+              isJoining: args?['isJoining'] as bool? ?? false,
+            );
+          }
         },
         '/settings': (context) => SettingsScreen(),
       },

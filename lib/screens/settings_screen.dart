@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:two_players_six_cups/utils/ui_style.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -7,9 +8,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String playerName = 'Player';
-  bool playerGoesFirst = true; // По умолчанию игрок ходит первым
-  final TextEditingController _nameController = TextEditingController(); // Контроллер для текста
+  late bool _playerGoesFirst;
+  late String _playerName;
 
   @override
   void initState() {
@@ -20,23 +20,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      playerName = prefs.getString('playerName') ?? 'Player';
-      playerGoesFirst = prefs.getBool('playerGoesFirst') ?? true; // Загружаем настройку
-      _nameController.text = playerName; // Устанавливаем текст в контроллер
+      _playerGoesFirst = prefs.getBool('playerGoesFirst') ?? true;
+      _playerName = prefs.getString('playerName') ?? 'Player';
     });
   }
 
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('playerName', playerName);
-    await prefs.setBool('playerGoesFirst', playerGoesFirst);
-    print('Settings saved - Player Name: $playerName, Player Goes First: $playerGoesFirst'); // Дебаг для проверки
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
+    await prefs.setBool('playerGoesFirst', _playerGoesFirst);
+    await prefs.setString('playerName', _playerName);
   }
 
   @override
@@ -49,73 +41,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Text(
               'Settings',
-              style: TextStyle(
-                fontSize: 48,
-                color: Colors.blueGrey,
-                fontWeight: FontWeight.bold,
-                shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
-              ),
+              style: UIStyle.titleStyle,
+              textAlign: TextAlign.center,
             ),
             SizedBox(height: 30),
-            Container(
-              padding: EdgeInsets.all(16),
-              width: 300, // Уменьшенная ширина контейнера настроек
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))],
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _nameController, // Поле для ввода имени
-                    decoration: InputDecoration(
-                      labelText: 'Player Name',
-                      labelStyle: TextStyle(color: Colors.blueGrey, fontSize: 18),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        playerName = value.trim(); // Убираем лишние пробелы и сохраняем как есть
-                      });
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Player Goes First: ',
+                  style: UIStyle.subtitleStyle,
+                ),
+                Switch(
+                  value: _playerGoesFirst,
+                  onChanged: (value) {
+                    setState(() {
+                      _playerGoesFirst = value;
                       _saveSettings();
-                    },
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Player Goes First',
-                        style: TextStyle(fontSize: 18, color: Colors.blueGrey),
-                      ),
-                      Switch(
-                        value: playerGoesFirst,
-                        onChanged: (value) {
-                          setState(() {
-                            playerGoesFirst = value;
-                          });
-                          _saveSettings();
-                        },
-                        activeColor: Colors.green,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    });
+                  },
+                  activeColor: UIStyle.primaryColor,
+                ),
+              ],
             ),
             SizedBox(height: 20),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Back', style: TextStyle(color: Colors.white, fontSize: 20)),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Player Name',
+                labelStyle: UIStyle.subtitleStyle.copyWith(color: UIStyle.secondaryColor),
+                border: OutlineInputBorder(borderRadius: UIStyle.buttonBorderRadius),
               ),
+              controller: TextEditingController(text: _playerName),
+              onChanged: (value) {
+                setState(() {
+                  _playerName = value;
+                  _saveSettings();
+                });
+              },
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Back', style: UIStyle.buttonTextStyle),
+              style: UIStyle.buttonStyle(),
             ),
           ],
         ),
