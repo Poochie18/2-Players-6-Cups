@@ -37,8 +37,21 @@ class MainMenu extends StatelessWidget {
             SizedBox(
               width: 200,
               child: ElevatedButton(
+                onPressed: () => Navigator.pushNamed(context, '/local_multiplayer'),
+                child: Text('Two Players', style: AppTextStyles.buttonText),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            SizedBox(
+              width: 200,
+              child: ElevatedButton(
                 onPressed: () => Navigator.pushNamed(context, '/multiplayer'),
-                child: Text('Multiplayer', style: AppTextStyles.buttonText),
+                child: Text('Online', style: AppTextStyles.buttonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   backgroundColor: Colors.green,

@@ -5,6 +5,7 @@ import 'package:two_players_six_cups/screens/difficulty_menu.dart';
 import 'package:two_players_six_cups/screens/game_screen.dart';
 import 'package:two_players_six_cups/screens/multiplayer_menu.dart';
 import 'package:two_players_six_cups/screens/settings_screen.dart';
+import 'package:two_players_six_cups/screens/local_multiplayer_setup.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,9 +28,44 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => MainMenu(),
         '/difficulty': (context) => DifficultyMenu(),
-        '/game': (context) => GameScreen(gameMode: 'single', botDifficulty: ModalRoute.of(context)!.settings.arguments as String?),
         '/multiplayer': (context) => MultiplayerMenu(),
         '/settings': (context) => SettingsScreen(),
+        '/local_multiplayer': (context) => LocalMultiplayerSetup(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/game') {
+          final args = settings.arguments;
+          
+          if (args is String) {
+            // Для режима одиночной игры, где передается только сложность бота
+            return MaterialPageRoute(
+              builder: (context) => GameScreen(
+                gameMode: 'single',
+                botDifficulty: args,
+              ),
+            );
+          } else if (args is Map<String, dynamic>) {
+            // Для режима локальной игры, где передается карта параметров
+            return MaterialPageRoute(
+              builder: (context) => GameScreen(
+                gameMode: args['gameMode'] ?? 'single',
+                botDifficulty: args['botDifficulty'],
+                roomCode: args['roomCode'],
+                hostIp: args['hostIp'],
+              ),
+              settings: settings,
+            );
+          }
+        }
+        
+        // Если маршрут не распознан, возвращаем страницу ошибки
+        return MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: Text('Ошибка навигации'),
+            ),
+          ),
+        );
       },
     );
   }

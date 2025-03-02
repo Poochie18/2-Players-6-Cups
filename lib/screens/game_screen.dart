@@ -18,55 +18,82 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  int currentPlayer = 1; // 1 = Player, 2 = Bot (по умолчанию игрок)
+  int currentPlayer = 1; // 1 = Player 1, 2 = Player 2
   List<List<Map<String, dynamic>?>> board = List.generate(3, (_) => List.filled(3, null));
-  List<Map<String, dynamic>> playerCups = [
+  List<Map<String, dynamic>> player1Cups = [
     {'size': 'small', 'player': 1}, {'size': 'small', 'player': 1},
     {'size': 'medium', 'player': 1}, {'size': 'medium', 'player': 1},
     {'size': 'large', 'player': 1}, {'size': 'large', 'player': 1},
   ];
-  List<Map<String, dynamic>> botCups = [
+  List<Map<String, dynamic>> player2Cups = [
     {'size': 'small', 'player': 2}, {'size': 'small', 'player': 2},
     {'size': 'medium', 'player': 2}, {'size': 'medium', 'player': 2},
     {'size': 'large', 'player': 2}, {'size': 'large', 'player': 2},
   ];
   String? winner;
   String? drawMessage; // Для сообщения о ничьей
-  bool isBotThinking = false;
-  String playerName = 'Player';
+  String player1Name = 'Player 1';
+  String player2Name = 'Player 2';
   bool soundEnabled = true; // По умолчанию звук включен
 
   @override
   void initState() {
     super.initState();
-    if (widget.gameMode != 'single') {
-      throw Exception('This screen is for single player only');
+    
+    if (widget.gameMode == 'single') {
+      // Режим игры с ботом
+      _loadSinglePlayerSettings().then((_) {
+        _printDebugSettings();
+        print('Single player game started: ${currentPlayer == 1 ? player1Name : player2Name} turn');
+        
+        // Если бот ходит первым, делаем ход бота
+        if (currentPlayer == 2) {
+          final random = Random();
+          final delay = Duration(milliseconds: 500 + random.nextInt(1000));
+          Future.delayed(delay, () {
+            botMove();
+          });
+        }
+      });
+    } else if (widget.gameMode == 'local_multiplayer') {
+      // Режим игры для двух игроков
+      _loadMultiplayerSettings().then((_) {
+        _printDebugSettings();
+        print('Local multiplayer game started: ${currentPlayer == 1 ? player1Name : player2Name} turn');
+      });
     }
-    _loadSettings().then((_) {
-      _printDebugSettings(); // Вызываем после загрузки настроек
-      print('Game started: ${currentPlayer == 1 ? playerName : 'Bot'} turn');
-      if (currentPlayer == 2 && !isBotThinking) { // Если бот ходит первым
-        isBotThinking = true;
-        final random = Random();
-        final delay = Duration(milliseconds: 500 + random.nextInt(1000)); // Задержка 500–1500 мс
-        Future.delayed(delay, () {
-          botMove();
-        });
-      }
-    });
   }
 
-  Future<void> _loadSettings() async {
+  Future<void> _loadSinglePlayerSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      playerName = prefs.getString('playerName') ?? 'Player';
-      currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2; // Убедимся, что загружаем корректно
+      player1Name = prefs.getString('playerName') ?? 'Player 1';
+      player2Name = 'Bot (${widget.botDifficulty ?? 'Easy'})';
+      currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2;
       soundEnabled = prefs.getBool('soundEnabled') ?? true;
     });
   }
 
-  void _printDebugSettings() {
-    print('Debug Settings - Player Name: $playerName, Player Goes First: ${currentPlayer == 1}, Sound Enabled: $soundEnabled');
+  Future<void> _loadMultiplayerSettings() async {
+    // Получаем параметры, переданные из экрана настройки локальной игры
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    
+    if (args != null) {
+      setState(() {
+        player1Name = args['player1Name'] ?? 'Player 1';
+        player2Name = args['player2Name'] ?? 'Player 2';
+        currentPlayer = args['player1GoesFirst'] == true ? 1 : 2;
+      });
+    } else {
+      // Если параметры не переданы, загружаем из настроек
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        player1Name = prefs.getString('playerName') ?? 'Player 1';
+        player2Name = prefs.getString('player2Name') ?? 'Player 2';
+        currentPlayer = (prefs.getBool('player1GoesFirst') ?? true) ? 1 : 2;
+        soundEnabled = prefs.getBool('soundEnabled') ?? true;
+      });
+    }
   }
 
   // Метод для воспроизведения звука нажатия
@@ -152,16 +179,16 @@ class _GameScreenState extends State<GameScreen> {
       body: Stack(
         children: [
           Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Стандартное расположение
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 flex: 1,
                 child: PlayerArea(
                   player: 2,
-                  cups: botCups,
+                  cups: player2Cups,
                   isMyTurn: currentPlayer == 2,
-                  label: 'Bot (${widget.botDifficulty ?? 'Easy'})',
-                  alwaysShowLabel: true, // Всегда показывать имя бота
+                  label: player2Name,
+                  alwaysShowLabel: true,
                 ),
               ),
               Padding(
@@ -175,7 +202,7 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                   child: Text(
                     winner == null && drawMessage == null
-                        ? (currentPlayer == 1 ? 'Your turn' : "Opponent's turn")
+                        ? (currentPlayer == 1 ? '$player1Name turn' : "$player2Name turn")
                         : '',
                     style: TextStyle(
                       fontSize: 24, 
@@ -191,7 +218,7 @@ class _GameScreenState extends State<GameScreen> {
                 width: 300,
                 height: 300,
                 child: GridView.builder(
-                  physics: NeverScrollableScrollPhysics(), // Убираем возможность скроллинга
+                  physics: NeverScrollableScrollPhysics(),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     childAspectRatio: 1,
@@ -229,10 +256,10 @@ class _GameScreenState extends State<GameScreen> {
                 flex: 1,
                 child: PlayerArea(
                   player: 1,
-                  cups: playerCups,
-                  isMyTurn: currentPlayer == 1 && !isBotThinking,
-                  label: playerName,
-                  alwaysShowLabel: true, // Всегда показывать имя игрока
+                  cups: player1Cups,
+                  isMyTurn: currentPlayer == 1,
+                  label: player1Name,
+                  alwaysShowLabel: true,
                 ),
               ),
             ],
@@ -247,10 +274,10 @@ class _GameScreenState extends State<GameScreen> {
           ),
           if (winner != null)
             Positioned(
-              top: 20, // Баннер над полем, ближе к верху
-              left: (MediaQuery.of(context).size.width - 400) / 2, // Центрируем баннер шириной 400
+              top: 20,
+              left: (MediaQuery.of(context).size.width - 400) / 2,
               child: Container(
-                width: 400, // Фиксированная ширина в стиле стола
+                width: 400,
                 padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: [Colors.green[300]!, Colors.green[700]!]),
@@ -302,8 +329,8 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void handleDrop(Map<String, dynamic> data, int index) {
-    if (currentPlayer != data['player'] || isBotThinking) {
-      print('Move blocked: currentPlayer=$currentPlayer, isBotThinking=$isBotThinking');
+    if (currentPlayer != data['player']) {
+      print('Move blocked: currentPlayer=$currentPlayer');
       return;
     }
 
@@ -312,31 +339,31 @@ class _GameScreenState extends State<GameScreen> {
     final existingCup = board[row][col];
 
     if (existingCup != null && !canPlace(data['size'], existingCup, currentPlayer)) {
-      print('Cannot place ${data['size']} over ${existingCup['size']} (only enemy cups can be overlapped: large/medium over small, large over medium)');
+      print('Cannot place ${data['size']} over ${existingCup['size']}');
       return;
     }
 
-    // Воспроизводим звук при успешном перемещении чашки
     _playTapSound();
 
     setState(() {
       board[row][col] = data;
       if (currentPlayer == 1) {
-        playerCups.remove(data);
+        player1Cups.remove(data);
       } else {
-        botCups.remove(data);
+        player2Cups.remove(data);
       }
-      print('$playerName placed ${data['size']} at ($row, $col). Cups left: ${currentPlayer == 1 ? playerCups.length : botCups.length}');
+      print('${currentPlayer == 1 ? player1Name : player2Name} placed ${data['size']} at ($row, $col).');
 
       if (winner == null) {
-        _checkGameEndAfterSecondPlayer(); // Проверяем исход после хода второго игрока
+        _checkGameEndAfterSecondPlayer();
         if (winner == null && drawMessage == null) {
           currentPlayer = 3 - currentPlayer; // Переключение между 1 и 2
-          isBotThinking = currentPlayer == 2;
-          print('Switching to ${currentPlayer == 1 ? 'Your turn' : "Opponent's turn"}');
-          if (isBotThinking) {
+          print('Switching to ${currentPlayer == 1 ? player1Name : player2Name} turn');
+          
+          // Если это режим одиночной игры и ход бота, делаем ход бота
+          if (widget.gameMode == 'single' && currentPlayer == 2) {
             final random = Random();
-            final delay = Duration(milliseconds: 500 + random.nextInt(1000)); // Задержка 500–1500 мс
+            final delay = Duration(milliseconds: 500 + random.nextInt(1000));
             Future.delayed(delay, () {
               botMove();
             });
@@ -367,92 +394,24 @@ class _GameScreenState extends State<GameScreen> {
     return false;
   }
 
-  void botMove() {
-    if (currentPlayer != 2 || widget.gameMode != 'single' || botCups.isEmpty) {
-      print('Bot move skipped: currentPlayer=$currentPlayer, cups left=${botCups.length}');
-      currentPlayer = 1;
-      isBotThinking = false;
-      return;
-    }
-
-    final freeCells = <int>[];
-    final overwriteCells = <int>[];
-    for (int i = 0; i < 9; i++) {
-      final row = i ~/ 3;
-      final col = i % 3;
-      final cell = board[row][col];
-      if (cell == null) {
-        freeCells.add(i);
-      } else if (cell['player'] == 1 && botCups.any((cup) => canPlace(cup['size'], cell, 2))) { // Проверяем, можно ли перекрыть любую чашкой
-        overwriteCells.add(i);
-      }
-    }
-
-    if (freeCells.isEmpty && overwriteCells.isEmpty) {
-      print('No available moves for Bot, but forcing a move if possible');
-      // Если нет ходов, ищем любой возможный ход (даже случайный)
-      for (int i = 0; i < 9; i++) {
-        final row = i ~/ 3;
-        final col = i % 3;
-        final cell = board[row][col];
-        for (var cup in botCups) {
-          if (canPlace(cup['size'], cell, 2)) {
-            freeCells.add(i);
-            break;
-          }
-        }
-      }
-      if (freeCells.isEmpty) {
-        currentPlayer = 1;
-        isBotThinking = false;
-        return;
-      }
-    }
-
-    final BotLogic botLogic = BotLogic(board, botCups, widget.botDifficulty ?? 'easy');
-    final Map<String, dynamic>? bestCup = botLogic.findBestMove(freeCells, overwriteCells, 2, botCups.length);
-
-    if (bestCup != null) {
-      final moveIndex = bestCup['moveIndex'] as int;
-      final botCup = botCups.firstWhere((cup) => cup['size'] == bestCup['size']); // Находим чашку по размеру
-      setState(() {
-        board[moveIndex ~/ 3][moveIndex % 3] = botCup;
-        botCups.remove(botCup); // Удаляем использованную чашку
-        print('Bot placed ${botCup['size']} at (${moveIndex ~/ 3}, ${moveIndex % 3}). Cups left: ${botCups.length}');
-
-        if (winner == null) {
-          _checkGameEndAfterSecondPlayer(); // Проверяем исход после хода второго игрока
-          if (winner == null && drawMessage == null) {
-            currentPlayer = 1;
-            isBotThinking = false;
-          }
-        }
-      });
-    } else {
-      currentPlayer = 1;
-      isBotThinking = false;
-      print('Bot has no valid moves, switching back to $playerName');
-    }
-  }
-
   void _checkGameEndAfterSecondPlayer() {
     // Проверка на победу
     for (var combo in _winningCombos) {
       final cells = combo.map((index) => board[index ~/ 3][index % 3]).toList();
       if (cells.every((cell) => cell != null && cell['player'] == 1)) {
-        setState(() => winner = playerName);
-        print('$playerName wins!');
+        setState(() => winner = player1Name);
+        print('$player1Name wins!');
         return;
       } else if (cells.every((cell) => cell != null && cell['player'] == 2)) {
-        setState(() => winner = 'Bot');
-        print('Bot wins!');
+        setState(() => winner = player2Name);
+        print('$player2Name wins!');
         return;
       }
     }
 
     // Ничья проверяется только после хода второго игрока
     if (currentPlayer == (currentPlayer == 1 ? 2 : 1)) { // Если это ход второго игрока
-      if (playerCups.isEmpty && botCups.isEmpty) {
+      if (player1Cups.isEmpty && player2Cups.isEmpty) {
         setState(() {
           drawMessage = 'Draw! Both players are out of cups.';
           winner = null;
@@ -461,35 +420,35 @@ class _GameScreenState extends State<GameScreen> {
         return;
       }
 
-      bool canPlayerMove = false;
+      bool canPlayer1Move = false;
       for (int i = 0; i < 9; i++) {
         final row = i ~/ 3;
         final col = i % 3;
         final cell = board[row][col];
-        for (var cup in playerCups) {
+        for (var cup in player1Cups) {
           if (canPlace(cup['size'], cell, 1)) {
-            canPlayerMove = true;
+            canPlayer1Move = true;
             break;
           }
         }
-        if (canPlayerMove) break;
+        if (canPlayer1Move) break;
       }
 
-      bool canBotMove = false;
+      bool canPlayer2Move = false;
       for (int i = 0; i < 9; i++) {
         final row = i ~/ 3;
         final col = i % 3;
         final cell = board[row][col];
-        for (var cup in botCups) {
+        for (var cup in player2Cups) {
           if (canPlace(cup['size'], cell, 2)) {
-            canBotMove = true;
+            canPlayer2Move = true;
             break;
           }
         }
-        if (canBotMove) break;
+        if (canPlayer2Move) break;
       }
 
-      if (!canPlayerMove && !canBotMove) {
+      if (!canPlayer1Move && !canPlayer2Move) {
         setState(() {
           drawMessage = 'Draw! No moves possible for either player.';
           winner = null;
@@ -509,30 +468,104 @@ class _GameScreenState extends State<GameScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       board = List.generate(3, (_) => List.filled(3, null));
-      playerCups = [
+      player1Cups = [
         {'size': 'small', 'player': 1}, {'size': 'small', 'player': 1},
         {'size': 'medium', 'player': 1}, {'size': 'medium', 'player': 1},
         {'size': 'large', 'player': 1}, {'size': 'large', 'player': 1},
       ];
-      botCups = [
+      player2Cups = [
         {'size': 'small', 'player': 2}, {'size': 'small', 'player': 2},
         {'size': 'medium', 'player': 2}, {'size': 'medium', 'player': 2},
         {'size': 'large', 'player': 2}, {'size': 'large', 'player': 2},
       ];
-      currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2; // Сбрасываем на настройки
+      
+      if (widget.gameMode == 'single') {
+        currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2;
+      } else if (widget.gameMode == 'local_multiplayer') {
+        currentPlayer = (prefs.getBool('player1GoesFirst') ?? true) ? 1 : 2;
+      }
+      
       winner = null;
       drawMessage = null;
-      isBotThinking = false;
-      print('Game reset: ${currentPlayer == 1 ? playerName : 'Bot'} turn');
-      if (currentPlayer == 2 && !isBotThinking) { // Если бот ходит первым после сброса
-        isBotThinking = true;
+      print('Game reset: ${currentPlayer == 1 ? player1Name : player2Name} turn');
+      
+      // Если это режим одиночной игры и ход бота, делаем ход бота
+      if (widget.gameMode == 'single' && currentPlayer == 2) {
         final random = Random();
-        final delay = Duration(milliseconds: 500 + random.nextInt(1000)); // Задержка 500–1500 мс
+        final delay = Duration(milliseconds: 500 + random.nextInt(1000));
         Future.delayed(delay, () {
           botMove();
         });
       }
     });
+  }
+
+  // Метод для хода бота
+  void botMove() {
+    if (currentPlayer != 2 || widget.gameMode != 'single' || player2Cups.isEmpty) {
+      print('Bot move skipped: currentPlayer=$currentPlayer, cups left=${player2Cups.length}');
+      currentPlayer = 1;
+      return;
+    }
+
+    final freeCells = <int>[];
+    final overwriteCells = <int>[];
+    for (int i = 0; i < 9; i++) {
+      final row = i ~/ 3;
+      final col = i % 3;
+      final cell = board[row][col];
+      if (cell == null) {
+        freeCells.add(i);
+      } else if (cell['player'] == 1 && player2Cups.any((cup) => canPlace(cup['size'], cell, 2))) {
+        overwriteCells.add(i);
+      }
+    }
+
+    if (freeCells.isEmpty && overwriteCells.isEmpty) {
+      print('No available moves for Bot, but forcing a move if possible');
+      for (int i = 0; i < 9; i++) {
+        final row = i ~/ 3;
+        final col = i % 3;
+        final cell = board[row][col];
+        for (var cup in player2Cups) {
+          if (canPlace(cup['size'], cell, 2)) {
+            freeCells.add(i);
+            break;
+          }
+        }
+      }
+      if (freeCells.isEmpty) {
+        currentPlayer = 1;
+        return;
+      }
+    }
+
+    final BotLogic botLogic = BotLogic(board, player2Cups, widget.botDifficulty ?? 'easy');
+    final Map<String, dynamic>? bestCup = botLogic.findBestMove(freeCells, overwriteCells, 2, player2Cups.length);
+
+    if (bestCup != null) {
+      final moveIndex = bestCup['moveIndex'] as int;
+      final botCup = player2Cups.firstWhere((cup) => cup['size'] == bestCup['size']);
+      setState(() {
+        board[moveIndex ~/ 3][moveIndex % 3] = botCup;
+        player2Cups.remove(botCup);
+        print('Bot placed ${botCup['size']} at (${moveIndex ~/ 3}, ${moveIndex % 3}). Cups left: ${player2Cups.length}');
+
+        if (winner == null) {
+          _checkGameEndAfterSecondPlayer();
+          if (winner == null && drawMessage == null) {
+            currentPlayer = 1;
+          }
+        }
+      });
+    } else {
+      currentPlayer = 1;
+      print('Bot has no valid moves, switching back to $player1Name');
+    }
+  }
+
+  void _printDebugSettings() {
+    print('Debug Settings - Player 1 Name: $player1Name, Player 2 Name: $player2Name, Player 1 Goes First: ${currentPlayer == 1}, Sound Enabled: $soundEnabled');
   }
 }
 
