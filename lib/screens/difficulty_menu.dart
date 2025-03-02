@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:two_players_six_cups/screens/game_screen.dart';
+import 'package:two_players_six_cups/styles/text_styles.dart';
 
 class DifficultyMenu extends StatelessWidget {
   @override
@@ -10,13 +11,13 @@ class DifficultyMenu extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Choose Difficulty',
-              style: TextStyle(
-                fontSize: 56,
-                color: Colors.blueGrey,
-                fontWeight: FontWeight.bold,
-                shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
+            Container(
+              width: double.infinity,
+              alignment: Alignment.center,
+              child: Text(
+                'Choose Difficulty',
+                style: AppTextStyles.screenTitle,
+                textAlign: TextAlign.center,
               ),
             ),
             SizedBox(height: 30),
@@ -27,7 +28,7 @@ class DifficultyMenu extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (_) => GameScreen(gameMode: 'single', botDifficulty: 'easy')),
                 ),
-                child: Text('Easy', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Easy', style: AppTextStyles.difficultyButtonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,
@@ -43,7 +44,7 @@ class DifficultyMenu extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (_) => GameScreen(gameMode: 'single', botDifficulty: 'medium')),
                 ),
-                child: Text('Medium', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Medium', style: AppTextStyles.difficultyButtonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,
@@ -59,7 +60,7 @@ class DifficultyMenu extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (_) => GameScreen(gameMode: 'single', botDifficulty: 'hard')),
                 ),
-                child: Text('Hard', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Hard', style: AppTextStyles.difficultyButtonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,
@@ -72,7 +73,7 @@ class DifficultyMenu extends StatelessWidget {
               width: 200,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Back', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Back', style: AppTextStyles.difficultyButtonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:two_players_six_cups/screens/main_menu.dart';
 import 'package:two_players_six_cups/screens/difficulty_menu.dart';
 import 'package:two_players_six_cups/screens/game_screen.dart';
@@ -6,6 +7,9 @@ import 'package:two_players_six_cups/screens/multiplayer_menu.dart';
 import 'package:two_players_six_cups/screens/settings_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Устанавливаем полноэкранный режим
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   runApp(MyApp());
 }
 

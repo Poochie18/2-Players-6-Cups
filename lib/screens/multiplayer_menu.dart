@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:two_players_six_cups/styles/text_styles.dart';
 
 class MultiplayerMenu extends StatelessWidget {
   @override
@@ -9,16 +10,16 @@ class MultiplayerMenu extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Multiplayer',
-              style: TextStyle(
-                fontSize: 56,
-                color: Colors.blueGrey,
-                fontWeight: FontWeight.bold,
-                shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
+            Container(
+              width: double.infinity,
+              alignment: Alignment.center,
+              child: Text(
+                'Multiplayer',
+                style: AppTextStyles.screenTitle,
+                textAlign: TextAlign.center,
               ),
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 30),
             SizedBox(
               width: 200,
               child: ElevatedButton(
@@ -26,7 +27,7 @@ class MultiplayerMenu extends StatelessWidget {
                   // Логика создания игры (временно пусто)
                   Navigator.pushNamed(context, '/game', arguments: 'multi');
                 },
-                child: Text('Create Game', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Create Game', style: AppTextStyles.buttonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,
@@ -45,7 +46,12 @@ class MultiplayerMenu extends StatelessWidget {
                     builder: (context) => AlertDialog(
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      title: Text('Join Game', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                      title: Center(
+                        child: Text(
+                          'Join Game', 
+                          style: AppTextStyles.popupTitle
+                        ),
+                      ),
                       content: TextField(
                         decoration: InputDecoration(
                           hintText: 'Enter code (6 digits)',
@@ -57,7 +63,7 @@ class MultiplayerMenu extends StatelessWidget {
                       actions: [
                         ElevatedButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text('Cancel', style: TextStyle(color: Colors.white, fontSize: 18)),
+                          child: Text('Cancel', style: AppTextStyles.buttonText),
                           style: ElevatedButton.styleFrom(
                             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                             backgroundColor: Colors.green,
@@ -70,7 +76,7 @@ class MultiplayerMenu extends StatelessWidget {
                             Navigator.pop(context);
                             Navigator.pushNamed(context, '/game', arguments: 'multi');
                           },
-                          child: Text('Connect', style: TextStyle(color: Colors.white, fontSize: 18)),
+                          child: Text('Connect', style: AppTextStyles.buttonText),
                           style: ElevatedButton.styleFrom(
                             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                             backgroundColor: Colors.green,
@@ -81,7 +87,7 @@ class MultiplayerMenu extends StatelessWidget {
                     ),
                   );
                 },
-                child: Text('Join Game', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Join Game', style: AppTextStyles.buttonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,
@@ -94,7 +100,7 @@ class MultiplayerMenu extends StatelessWidget {
               width: 200,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Back', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Back', style: AppTextStyles.buttonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,

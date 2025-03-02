@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bot_logic.dart';
+import 'package:two_players_six_cups/styles/text_styles.dart';
+import 'package:flutter/services.dart';
 
 class GameScreen extends StatefulWidget {
   final String gameMode;
@@ -32,6 +34,7 @@ class _GameScreenState extends State<GameScreen> {
   String? drawMessage; // Для сообщения о ничьей
   bool isBotThinking = false;
   String playerName = 'Player';
+  bool soundEnabled = true; // По умолчанию звук включен
 
   @override
   void initState() {
@@ -58,11 +61,20 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       playerName = prefs.getString('playerName') ?? 'Player';
       currentPlayer = (prefs.getBool('playerGoesFirst') ?? true) ? 1 : 2; // Убедимся, что загружаем корректно
+      soundEnabled = prefs.getBool('soundEnabled') ?? true;
     });
   }
 
   void _printDebugSettings() {
-    print('Debug Settings - Player Name: $playerName, Player Goes First: ${currentPlayer == 1}');
+    print('Debug Settings - Player Name: $playerName, Player Goes First: ${currentPlayer == 1}, Sound Enabled: $soundEnabled');
+  }
+
+  // Метод для воспроизведения звука нажатия
+  void _playTapSound() {
+    if (soundEnabled) {
+      // Здесь будет код для воспроизведения звука
+      print('Playing tap sound');
+    }
   }
 
   void _showMenuPopup() {
@@ -74,12 +86,7 @@ class _GameScreenState extends State<GameScreen> {
         title: Center(
           child: Text(
             'Menu',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.blueGrey,
-              shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
-            ),
+            style: AppTextStyles.popupTitle,
           ),
         ),
         content: Column(
@@ -92,7 +99,7 @@ class _GameScreenState extends State<GameScreen> {
                   Navigator.pop(context);
                   resetGame();
                 },
-                child: Text('Restart', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Restart', style: AppTextStyles.buttonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,
@@ -106,12 +113,28 @@ class _GameScreenState extends State<GameScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.popUntil(context, (route) => route.isFirst); // Возвращаемся в главное меню
+                  Navigator.popUntil(context, (route) => route.isFirst);
                 },
-                child: Text('Back to Main Menu', style: TextStyle(color: Colors.white, fontSize: 20)),
+                child: Text('Main Menu', style: AppTextStyles.buttonText),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            SizedBox(
+              width: 200,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  SystemNavigator.pop();
+                },
+                child: Text('Exit Game', style: AppTextStyles.buttonText),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 15),
+                  backgroundColor: Colors.red,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -136,8 +159,31 @@ class _GameScreenState extends State<GameScreen> {
                 child: PlayerArea(
                   player: 2,
                   cups: botCups,
-                  isMyTurn: false,
+                  isMyTurn: currentPlayer == 2,
                   label: 'Bot (${widget.botDifficulty ?? 'Easy'})',
+                  alwaysShowLabel: true, // Всегда показывать имя бота
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.green[700],
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5, offset: Offset(0, 3))],
+                  ),
+                  child: Text(
+                    winner == null && drawMessage == null
+                        ? (currentPlayer == 1 ? 'Your turn' : "Opponent's turn")
+                        : '',
+                    style: TextStyle(
+                      fontSize: 24, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.white,
+                      shadows: [Shadow(color: Colors.black38, blurRadius: 2, offset: Offset(1, 1))],
+                    ),
+                  ),
                 ),
               ),
               SizedBox(height: 10),
@@ -174,12 +220,6 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
               SizedBox(height: 10),
-              Text(
-                winner == null && drawMessage == null
-                    ? (currentPlayer == 1 ? 'Your turn' : "Opponent's turn")
-                    : '',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey),
-              ),
               if (drawMessage != null)
                 Text(
                   drawMessage!,
@@ -192,6 +232,7 @@ class _GameScreenState extends State<GameScreen> {
                   cups: playerCups,
                   isMyTurn: currentPlayer == 1 && !isBotThinking,
                   label: playerName,
+                  alwaysShowLabel: true, // Всегда показывать имя игрока
                 ),
               ),
             ],
@@ -221,9 +262,7 @@ class _GameScreenState extends State<GameScreen> {
                   children: [
                     Text(
                       '$winner won!',
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white, shadows: [
-                        Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2),
-                      ]),
+                      style: AppTextStyles.winnerText,
                     ),
                     SizedBox(height: 20),
                     Row(
@@ -276,6 +315,9 @@ class _GameScreenState extends State<GameScreen> {
       print('Cannot place ${data['size']} over ${existingCup['size']} (only enemy cups can be overlapped: large/medium over small, large over medium)');
       return;
     }
+
+    // Воспроизводим звук при успешном перемещении чашки
+    _playTapSound();
 
     setState(() {
       board[row][col] = data;
@@ -499,67 +541,75 @@ class PlayerArea extends StatelessWidget {
   final List<Map<String, dynamic>> cups;
   final bool isMyTurn;
   final String label;
+  final bool alwaysShowLabel;
 
-  PlayerArea({required this.player, required this.cups, required this.isMyTurn, required this.label});
+  PlayerArea({required this.player, required this.cups, required this.isMyTurn, required this.label, this.alwaysShowLabel = false});
 
   @override
   Widget build(BuildContext context) {
     final cupWidth = 60.0; // Ширина одной чашки
     final totalCupsWidth = cupWidth * 6 + 80; // Фиксированная ширина стола (6 чашек + отступы)
     return Center(
-      child: Container(
-        width: totalCupsWidth,
-        height: 130, // Уменьшенная высота для предотвращения переполнения
-        padding: EdgeInsets.all(8), // Уменьшенный padding
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green[300]!, Colors.green[700]!], // Зелёный градиент в стиле игры
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))],
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 20, // Уменьшенный размер текста
-                  color: Colors.black, // Контрастный цвет на белом фоне
-                  fontWeight: FontWeight.bold,
-                  shadows: [Shadow(color: Colors.white, offset: Offset(1, 1), blurRadius: 2)],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: totalCupsWidth,
+            height: 110, // Уменьшенная высота для предотвращения переполнения
+            padding: EdgeInsets.all(8), // Уменьшенный padding
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.green[300]!, Colors.green[700]!], // Зелёный градиент в стиле игры
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))],
+            ),
+            child: Column(
+              children: [
+                // Имя игрока внутри зеленого столика
+                if (alwaysShowLabel || isMyTurn)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 5),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        shadows: [Shadow(color: Colors.black38, blurRadius: 2, offset: Offset(1, 1))],
+                      ),
+                    ),
+                  ),
+                // Чашки
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(6, (index) {
+                    if (index < cups.length) {
+                      return isMyTurn
+                          ? Draggable<Map<String, dynamic>>(
+                              data: cups[index],
+                              child: CupWidget(size: cups[index]['size'], player: cups[index]['player']),
+                              feedback: CupWidget(size: cups[index]['size'], player: cups[index]['player'], isDragging: true),
+                              childWhenDragging: Container(
+                                width: 60, // Фиксированная ширина для места чашки
+                                height: 60, // Фиксированная высота для места чашки
+                              ),
+                            )
+                          : CupWidget(size: cups[index]['size'], player: cups[index]['player']);
+                    } else {
+                      return Container(
+                        width: 60, // Пустое место для сохранения позиции
+                        height: 60,
+                      );
+                    }
+                  }),
                 ),
-              ),
-              SizedBox(height: 5), // Уменьшенный отступ
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(6, (index) {
-                  if (index < cups.length) {
-                    return isMyTurn
-                        ? Draggable<Map<String, dynamic>>(
-                            data: cups[index],
-                            child: CupWidget(size: cups[index]['size'], player: cups[index]['player']),
-                            feedback: CupWidget(size: cups[index]['size'], player: cups[index]['player'], isDragging: true),
-                            childWhenDragging: Container(
-                              width: 60, // Фиксированная ширина для места чашки
-                              height: 60, // Фиксированная высота для места чашки
-                            ),
-                          )
-                        : CupWidget(size: cups[index]['size'], player: cups[index]['player']);
-                  } else {
-                    return Container(
-                      width: 60, // Пустое место для сохранения позиции
-                      height: 60,
-                    );
-                  }
-                }),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
