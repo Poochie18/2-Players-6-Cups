@@ -311,7 +311,7 @@ class _GameScreenState extends State<GameScreen> {
         );
       },
     );
-}
+  }
 
   void _showDrawDialog() {
     final localizations = AppLocalizations.of(context);
@@ -560,64 +560,109 @@ class _GameScreenState extends State<GameScreen> {
                 // Игровое поле
                 Container(
                   height: gameAreaHeight,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Padding(
-                        padding: EdgeInsets.only(bottom: 20),
-                        child: Transform.rotate(
-                          angle: widget.gameMode == 'local_multiplayer' && currentPlayer == 2 ? pi : 0,
-                          child: Text(
-                            !gameEnded ? (widget.gameMode == 'single' 
-                                ? (currentPlayer == 1 ? localizations.yourTurn : localizations.opponentTurn)
-                                : (currentPlayer == 1 ? '${player1Name} ${localizations.turn}' : '${player2Name} ${localizations.turn}'))
-                            : '',
-                            style: AppTextStyles.turnIndicator,
-                            textAlign: TextAlign.center,
-                          ),
+                      Transform.translate(
+                        offset: Offset(0, 30),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: MediaQuery.of(context).size.width > 400 ? 400 : MediaQuery.of(context).size.width * 0.9,
+                              height: MediaQuery.of(context).size.width > 400 ? 400 : MediaQuery.of(context).size.width * 0.9,
+                              padding: EdgeInsets.all(20),
+                              child: GridView.builder(
+                                physics: NeverScrollableScrollPhysics(),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  childAspectRatio: 1,
+                                ),
+                                itemCount: 9,
+                                itemBuilder: (context, index) {
+                                  return DragTarget<Map<String, dynamic>>(
+                                    onWillAccept: (data) {
+                                      if (data == null) return false;
+                                      final row = index ~/ 3;
+                                      final col = index % 3;
+                                      final existingCup = board[row][col];
+                                      return canPlace(data['size'], existingCup, data['player']);
+                                    },
+                                    onAccept: (data) => handleDrop(data, index),
+                                    builder: (context, candidateData, rejectedData) {
+                                      bool canAccept = candidateData.isNotEmpty;
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          border: Border(
+                                            top: index ~/ 3 == 0 ? BorderSide.none : BorderSide(color: Colors.black, width: 2),
+                                            bottom: index ~/ 3 == 2 ? BorderSide.none : BorderSide(color: Colors.black, width: 2),
+                                            left: index % 3 == 0 ? BorderSide.none : BorderSide(color: Colors.black, width: 2),
+                                            right: index % 3 == 2 ? BorderSide.none : BorderSide(color: Colors.black, width: 2),
+                                          ),
+                                          color: canAccept ? Colors.green.withOpacity(0.3) : null,
+                                        ),
+                                        child: Center(
+                                          child: board[index ~/ 3][index % 3] != null
+                                              ? CupWidget(size: board[index ~/ 3][index % 3]!['size'], player: board[index ~/ 3][index % 3]!['player'])
+                                              : null,
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Container(
-                        width: 300,
-                        height: 300,
-                        child: GridView.builder(
-                          physics: NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            childAspectRatio: 1,
-                          ),
-                          itemCount: 9,
-                          itemBuilder: (context, index) {
-                            return DragTarget<Map<String, dynamic>>(
-                              onWillAccept: (data) {
-                                if (data == null) return false;
-                                final row = index ~/ 3;
-                                final col = index % 3;
-                                final existingCup = board[row][col];
-                                return canPlace(data['size'], existingCup, data['player']);
-                              },
-                              onAccept: (data) => handleDrop(data, index),
-                              builder: (context, candidateData, rejectedData) {
-                                bool canAccept = candidateData.isNotEmpty;
-                                return Container(
+                      Positioned(
+                        top: 0,
+                        child: Transform.rotate(
+                          angle: widget.gameMode == 'local_multiplayer' && currentPlayer == 2 ? pi : 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (!gameEnded)
+                                Text(
+                                  widget.gameMode == 'single' 
+                                    ? (currentPlayer == 1 ? localizations.yourTurn : localizations.opponentTurn)
+                                    : (currentPlayer == 1 ? '${player1Name} ${localizations.turn}' : '${player2Name} ${localizations.turn}'),
+                                  style: AppTextStyles.turnIndicator,
+                                  textAlign: TextAlign.center,
+                                )
+                              else
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                   decoration: BoxDecoration(
-                                    border: Border(
-                                      top: index ~/ 3 == 0 ? BorderSide.none : BorderSide(color: Colors.black, width: 2),
-                                      bottom: index ~/ 3 == 2 ? BorderSide.none : BorderSide(color: Colors.black, width: 2),
-                                      left: index % 3 == 0 ? BorderSide.none : BorderSide(color: Colors.black, width: 2),
-                                      right: index % 3 == 2 ? BorderSide.none : BorderSide(color: Colors.black, width: 2),
-                                    ),
-                                    color: canAccept ? Colors.green.withOpacity(0.3) : null,
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Center(
-                                    child: board[index ~/ 3][index % 3] != null
-                                        ? CupWidget(size: board[index ~/ 3][index % 3]!['size'], player: board[index ~/ 3][index % 3]!['player'])
-                                        : null,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        winner != null 
+                                          ? '$winner ${localizations.winner}!'
+                                          : localizations.draw,
+                                        style: AppTextStyles.turnIndicator.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(width: 20),
+                                      IconButton(
+                                        icon: Icon(Icons.refresh, color: Colors.white),
+                                        onPressed: _restartGame,
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.home, color: Colors.white),
+                                        onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
+                                      ),
+                                    ],
                                   ),
-                                );
-                              },
-                            );
-                          },
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -641,8 +686,8 @@ class _GameScreenState extends State<GameScreen> {
               bottom: 10,
               left: 10,
               child: IconButton(
-                icon: Icon(Icons.menu, size: 30, color: Colors.blueGrey),
-                onPressed: _showGameMenu,
+                icon: Icon(Icons.home, size: 30, color: Colors.blueGrey),
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
               ),
             ),
           ],
@@ -727,7 +772,6 @@ class _GameScreenState extends State<GameScreen> {
           winner = player1Name;
           gameEnded = true;
         });
-        _showWinnerDialog(player1Name);
         print('$player1Name wins!');
         return;
       } else if (cells.every((cell) => cell != null && cell['player'] == 2)) {
@@ -735,7 +779,6 @@ class _GameScreenState extends State<GameScreen> {
           winner = player2Name;
           gameEnded = true;
         });
-        _showWinnerDialog(player2Name);
         print('$player2Name wins!');
         return;
       }
@@ -794,7 +837,6 @@ class _GameScreenState extends State<GameScreen> {
         winner = null;
         gameEnded = true;
       });
-      _showDrawDialog();
     }
   }
 
