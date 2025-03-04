@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:two_players_six_cups/screens/main_menu.dart';
 import 'package:two_players_six_cups/screens/difficulty_menu.dart';
 import 'package:two_players_six_cups/screens/game_screen.dart';
 import 'package:two_players_six_cups/screens/multiplayer_menu.dart';
 import 'package:two_players_six_cups/screens/settings_screen.dart';
 import 'package:two_players_six_cups/screens/local_multiplayer_setup.dart';
+import 'l10n/app_localizations.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,16 +17,64 @@ void main() {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+
+  static _MyAppState of(BuildContext context) {
+    return context.findAncestorStateOfType<_MyAppState>()!;
+  }
+}
+
+class _MyAppState extends State<MyApp> {
+  Locale _locale = Locale('en');
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocale();
+  }
+
+  Future<void> _loadLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString('languageCode') ?? 'en';
+    setState(() {
+      _locale = Locale(languageCode);
+    });
+  }
+
+  void setLocale(Locale locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('languageCode', locale.languageCode);
+    setState(() {
+      _locale = locale;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '2 Players 6 Cups',
+      title: 'Two Players Six Cups',
       theme: ThemeData(
         primarySwatch: Colors.green,
         scaffoldBackgroundColor: Colors.grey[100],
         textTheme: TextTheme(bodyMedium: TextStyle(color: Colors.blueGrey)),
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+      locale: _locale,
+      supportedLocales: [
+        Locale('en'),
+        Locale('uk'),
+        Locale('de'),
+        Locale('zh'),
+        Locale('fr'),
+      ],
+      localizationsDelegates: [
+        AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       initialRoute: '/',
       routes: {
         '/': (context) => MainMenu(),

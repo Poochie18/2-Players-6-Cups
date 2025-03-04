@@ -22,5 +22,6 @@
   "player": "Player",
   "bot": "Bot",
   "waitingRestart": "Waiting for the other player to confirm restart...",
-  "restartRequest": "Enemy wants to play again"
+  "restartRequest": "Enemy wants to play again",
+  "player1GoesFirst": "Player 1 goes first"
 }

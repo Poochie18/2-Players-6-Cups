@@ -1,5 +1,5 @@
 name: two_players_six_cups
-description: A new Flutter project.
+description: A game where two players compete with six cups each.
 
 publish_to: 'none'
 
@@ -11,12 +11,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   web_socket_channel: ^2.4.5
   shared_preferences: ^2.2.2 # Добавляем для сохранения настроек
+  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true

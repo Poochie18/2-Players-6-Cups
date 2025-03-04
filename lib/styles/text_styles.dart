@@ -54,4 +54,11 @@ class AppTextStyles {
     color: Colors.blueGrey,
     shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
   );
+
+  static TextStyle turnIndicator = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+    color: Colors.green[800],
+    shadows: [Shadow(color: Colors.black26, offset: Offset(1, 1), blurRadius: 2)],
+  );
 } 
