@@ -8,6 +8,9 @@ import 'package:two_players_six_cups/screens/game_screen.dart';
 import 'package:two_players_six_cups/screens/multiplayer_menu.dart';
 import 'package:two_players_six_cups/screens/settings_screen.dart';
 import 'package:two_players_six_cups/screens/local_multiplayer_setup.dart';
+import 'package:two_players_six_cups/screens/online_multiplayer_menu.dart';
+import 'package:two_players_six_cups/screens/create_game_screen.dart';
+import 'package:two_players_six_cups/screens/join_game_screen.dart';
 import 'l10n/app_localizations.dart';
 
 void main() {
@@ -82,6 +85,9 @@ class _MyAppState extends State<MyApp> {
         '/multiplayer': (context) => MultiplayerMenu(),
         '/settings': (context) => SettingsScreen(),
         '/local_multiplayer': (context) => LocalMultiplayerSetup(),
+        '/online_multiplayer': (context) => OnlineMultiplayerMenu(),
+        '/create_game': (context) => CreateGameScreen(),
+        '/join_game': (context) => JoinGameScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/game') {
@@ -96,7 +102,7 @@ class _MyAppState extends State<MyApp> {
               ),
             );
           } else if (args is Map<String, dynamic>) {
-            // Для режима локальной игры, где передается карта параметров
+            // Для режима локальной игры или онлайн-игры
             return MaterialPageRoute(
               builder: (context) => GameScreen(
                 gameMode: args['gameMode'] ?? 'single',

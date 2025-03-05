@@ -5,18 +5,21 @@ import 'bot_logic.dart';
 import 'package:two_players_six_cups/styles/text_styles.dart';
 import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
+import '../services/multiplayer_service.dart';
 
 class GameScreen extends StatefulWidget {
   final String gameMode;
   final String? botDifficulty;
   final String? roomCode;
   final String? hostIp;
+  final bool isHost;
 
   GameScreen({
     required this.gameMode,
     this.botDifficulty,
     this.roomCode,
     this.hostIp,
+    this.isHost = false,
   });
 
   @override
@@ -44,33 +47,25 @@ class _GameScreenState extends State<GameScreen> {
   bool player1Turn = true;
   bool gameEnded = false;
   bool isDragging = false;
+  MultiplayerService? _multiplayerService;
+  bool _isOnlineGame = false;
+  bool _isMyTurn = false;
 
   @override
   void initState() {
     super.initState();
     
-    if (widget.gameMode == 'single') {
-      // Режим игры с ботом
-      _loadSinglePlayerSettings().then((_) {
-        _printDebugSettings();
-        print('Single player game started: ${currentPlayer == 1 ? player1Name : player2Name} turn');
-        
-        // Если бот ходит первым, делаем ход бота
-        if (currentPlayer == 2) {
-          final random = Random();
-          final delay = Duration(milliseconds: 500 + random.nextInt(1000));
-          Future.delayed(delay, () {
-            botMove();
-          });
-        }
-      });
-    } else if (widget.gameMode == 'local_multiplayer') {
-      // Режим игры для двух игроков
-      _loadMultiplayerSettings().then((_) {
-        _printDebugSettings();
-        print('Local multiplayer game started: ${currentPlayer == 1 ? player1Name : player2Name} turn');
-      });
+    if (widget.gameMode == 'online') {
+      _isOnlineGame = true;
+      _setupMultiplayerService();
     }
+    
+    if (widget.gameMode == 'single') {
+      _loadSinglePlayerSettings();
+    } else if (widget.gameMode == 'local_multiplayer') {
+      _loadMultiplayerSettings();
+    }
+    
     _loadPlayerNames();
   }
 
@@ -697,6 +692,11 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void handleDrop(Map<String, dynamic> data, int index) {
+    if (_isOnlineGame && !_isMyTurn) {
+      print('Not your turn');
+      return;
+    }
+
     if (currentPlayer != data['player']) {
       print('Move blocked: currentPlayer=$currentPlayer');
       return;
@@ -722,10 +722,21 @@ class _GameScreenState extends State<GameScreen> {
       }
       print('${currentPlayer == 1 ? player1Name : player2Name} placed ${data['size']} at ($row, $col).');
 
+      if (_isOnlineGame) {
+        // Отправляем ход на сервер
+        _multiplayerService?.makeMove({
+          'cup': data,
+          'position': index,
+        });
+      }
+
       if (winner == null) {
         _checkGameEndAfterSecondPlayer();
         if (winner == null && drawMessage == null) {
           currentPlayer = 3 - currentPlayer; // Переключение между 1 и 2
+          if (_isOnlineGame) {
+            _isMyTurn = false;
+          }
           print('Switching to ${currentPlayer == 1 ? player1Name : player2Name} turn');
           
           // Если это режим одиночной игры и ход бота, делаем ход бота
@@ -838,6 +849,66 @@ class _GameScreenState extends State<GameScreen> {
         gameEnded = true;
       });
     }
+  }
+
+  void _setupMultiplayerService() {
+    _multiplayerService = MultiplayerService();
+    
+    _multiplayerService!.setErrorCallback((error) {
+      // Показываем ошибку пользователю
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    });
+
+    _multiplayerService!.setGameStateUpdateCallback((gameState) {
+      if (!mounted) return;
+      
+      setState(() {
+        if (gameState['type'] == 'player_joined') {
+          // Второй игрок присоединился
+          _isMyTurn = widget.isHost;
+        } else if (gameState['type'] == 'game_update') {
+          // Обновляем состояние игры
+          _updateGameState(gameState['gameState']);
+        }
+      });
+    });
+
+    _multiplayerService!.setMoveCallback((moveData) {
+      if (!mounted) return;
+      
+      setState(() {
+        // Обрабатываем ход противника
+        handleDrop(moveData['cup'], moveData['position']);
+      });
+    });
+
+    // Подключаемся к серверу
+    if (widget.hostIp != null) {
+      _multiplayerService!.connect('ws://${widget.hostIp}:8080');
+      if (widget.roomCode != null) {
+        _multiplayerService!.joinRoom(widget.roomCode!);
+      }
+    }
+  }
+
+  void _updateGameState(Map<String, dynamic> gameState) {
+    setState(() {
+      board = gameState['board'];
+      player1Cups = gameState['player1Cups'];
+      player2Cups = gameState['player2Cups'];
+      currentPlayer = gameState['currentPlayer'];
+      winner = gameState['winner'];
+      drawMessage = gameState['drawMessage'];
+      _isMyTurn = gameState['currentPlayer'] == (widget.isHost ? 1 : 2);
+    });
+  }
+
+  @override
+  void dispose() {
+    _multiplayerService?.disconnect();
+    super.dispose();
   }
 
   static const _winningCombos = [
